@@ -667,8 +667,27 @@ fn create_new_distrobox(window: &ApplicationWindow) {
         }
     }));
 
+
     // TRANSLATORS: Entry Label - Name input for new distrobox
     name_entry_row.set_title(&gettext("Name"));
+
+    // hostname input 
+    let host_name_entry_row = adw::EntryRow::new();
+    host_name_entry_row.set_hexpand(true);
+
+    // hostname input must have text in it to enable the create button
+    let hner_clone = host_name_entry_row.clone();
+    host_name_entry_row.connect_changed(clone!(#[weak] create_btn, move |_row| {
+        if hner_clone.text().to_string().len() > 0 {
+            create_btn.set_sensitive(true);
+        } else {
+            create_btn.set_sensitive(false);
+        }
+    }));
+
+
+    // TRANSLATORS: Entry Label - Name input for new distrobox
+    host_name_entry_row.set_title(&gettext("Host Name"));
 
     // custom home
     let choose_home_btn = gtk::Button::from_icon_name("document-open-symbolic");
@@ -737,7 +756,8 @@ fn create_new_distrobox(window: &ApplicationWindow) {
     let loading_spinner = gtk::Spinner::new();
 
     let home_row = home_entry_row_future_clone.clone();
-    let ne_row = name_entry_row.clone();
+    let ne_row: adw::EntryRow = name_entry_row.clone();
+    let hn_row: adw::EntryRow = host_name_entry_row.clone();
     let is_row = image_select_row.clone();
     let in_row = init_row.clone();
     let loading_spinner_clone = loading_spinner.clone();
@@ -745,6 +765,7 @@ fn create_new_distrobox(window: &ApplicationWindow) {
     let volume_box_list_clone = volume_box_list.clone();
     create_btn.connect_clicked(move |btn| {
         let mut name = ne_row.text().to_string();
+        let mut host_name = hn_row.text().to_string();
         let mut home_path = home_row.text().to_string();
         let use_init = in_row.is_active();
         let mut image = is_row
@@ -788,6 +809,7 @@ fn create_new_distrobox(window: &ApplicationWindow) {
         }
 
         name = name.replace(' ', "-");
+        host_name = host_name.replace(' ', "-");
         home_path = home_path.replace(' ', "\\ "); //Escape spaces
         image = image.split(" - ").last().unwrap().to_string();
         image = image.replace(" ✦ ", "");
@@ -797,7 +819,7 @@ fn create_new_distrobox(window: &ApplicationWindow) {
         let (sender, receiver) = async_channel::bounded(1);
 
         gio::spawn_blocking(move || {
-            create_box(&name, &image, &home_path, use_init, volumes.as_slice());
+            create_box(&name,  &host_name, &image, &home_path, use_init, volumes.as_slice());
             sender
                 .send_blocking(BoxCreatedMessage::Success)
                 .expect("The channel needs to be open.");
@@ -831,6 +853,7 @@ fn create_new_distrobox(window: &ApplicationWindow) {
     });
 
     boxed_list.append(&name_entry_row);
+    boxed_list.append(&host_name_entry_row);
     boxed_list.append(&image_select_row);
     boxed_list.append(&init_row);
 
@@ -1257,6 +1280,7 @@ fn on_clone_clicked(window: &ApplicationWindow, box_name: String) {
     // TRANSLATORS: Entry Label - Name input for new distrobox
     name_entry_row.set_title(&gettext("Name"));
 
+    
     let loading_spinner = gtk::Spinner::new();
 
     let loading_spinner_clone = loading_spinner.clone();

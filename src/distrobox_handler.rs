@@ -322,6 +322,7 @@ pub fn delete_box(box_name: &str) -> String {
 /// to initialise it.
 pub fn create_box(
     box_name: &str,
+    host_name: &str,
     image: &str,
     home_path: &str,
     use_init: bool,
@@ -336,6 +337,11 @@ pub fn create_box(
         args.push("--init");
         args.push("--additional-packages");
         args.push("systemd");
+    }
+
+    if !host_name.is_empty() {
+        args.push("--hostname");
+        args.push(host_name);
     }
 
     if !home_path.is_empty() {
